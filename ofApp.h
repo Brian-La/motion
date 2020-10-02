@@ -120,7 +120,8 @@ class ofApp : public ofBaseApp{
     
         //imageToggle: if true ? image : triangle;
         //pathToggle:   if true ? path display : no path display
-        ofxToggle imageToggle, pathToggle;
+        //rainbowToggle
+        ofxToggle imageToggle, pathToggle, rainbowToggle;
     
         Triangle tri;       //triangle obj
         Image img;          //image obj

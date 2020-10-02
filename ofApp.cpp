@@ -58,6 +58,7 @@ void ofApp::setup(){
     gui.add(animSpeed.setup("Speed", 6, 1, 20));      //... default: 4
     gui.add(imageToggle.setup("Use image", false));     //...default false
     gui.add(pathToggle.setup("Draw path", true));       //...default true
+    gui.add(rainbowToggle.setup("Color Frenzy", false));     //false
     
     
     //load image and center position
@@ -126,7 +127,10 @@ void ofApp::draw(){
     //draw sin wave if path toggle true
     if(pathToggle) {
         ofSetColor(ofColor::white);
+        
         for(int i = 0; i < ofGetWidth(); i+=5) {
+            if(rainbowToggle)
+                ofSetColor(ofRandom(255), ofRandom(255), ofRandom(255));
             glm::vec3 p = curveEval(i, animScale, animCycles);
             ofDrawCircle(p.x, p.y, 2);      //circle each pixel
         }
