@@ -1,7 +1,6 @@
 #include "ofApp.h"
 
-ofVec2f p1, p2;   //angle vectors
-int r, g, b;
+ofVec2f tVec, iVec, cVec;   //angle vectors: triangle (t), image (i), curve point (c)
 
 //override Triangle draw method: use mult matrix
 void Triangle::draw() {
@@ -31,6 +30,15 @@ bool Triangle::inside(glm::vec3 p, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3) {
         return false;
 }
 
+//override Image draw method:: use mult matrix
+void Image::draw(){
+    ofPushMatrix();
+    ofMultMatrix(getMatrix());
+    ofScale(0.05, 0.05, 0);     //scale image down first
+    image.draw(-width/2.0, -height/2.0, 0);     //center image post TLM
+    ofPopMatrix();
+}
+
 
 //--------------------------------------------------------------
 void ofApp::setup(){
@@ -47,7 +55,15 @@ void ofApp::setup(){
     gui.setup();
     gui.add(animScale.setup("Scale", 200, 0, 400));     //speed default: 200
     gui.add(animCycles.setup("Cycles", 4, 0, 10));      //... default: 4
-    gui.add(animSpeed.setup("Speed", 4, 1, 10));      //... default: 4
+    gui.add(animSpeed.setup("Speed", 6, 1, 20));      //... default: 4
+    gui.add(imageToggle.setup("Use image", false));     //...default false
+    gui.add(pathToggle.setup("Draw path", true));       //...default true
+    
+    
+    //load image and center position
+    img.load("images/pacman.png");
+    img.pos = glm::vec3(ofGetWindowWidth() / 2.0, ofGetWindowHeight() / 2.0, 0);
+    
     
     ofSetBackgroundColor(ofColor::black);
     
@@ -59,18 +75,36 @@ void ofApp::update(){
     
     //start animation
     if(startAnim) {
-        tri.color = ofColor::yellow;
+        //set triangle color orange
+        tri.color = ofColor::orange;
         
-        curvePos += animSpeed;      //increment by animSpeed
+        //movement (constant speed)-----------
+        //reset curvePos when img or tri reach end of window
+        if(tri.pos.x >= ofGetWidth() || img.pos.x >= ofGetWidth()) curvePos = 0;
         
-        if(tri.pos.x >= ofGetWidth()) curvePos = 0;     //reset when at end
-        tri.pos = curveEval(curvePos, animScale, animCycles);      //tri position = curve position
+        //calc. normal vector for mag./dir. of next point on curve
+        normPos = glm::normalize(curveEval(curvePos + 1, animScale, animCycles) - tri.pos);
         
-        //difference between heading vectors
-        p1 = glm::vec3(0, -1, 0);       //set an initial heading vector (h.v.) thru TLM
-        p2 = glm::vec3(tri.pos - curveEval((curvePos + 1), animScale, animCycles)); //acquire next h.v. thru. diff. of pos between tri pos and curvePos
+        //multiply normal vector by dist desired (i.e. speed)
+        estPos = normPos * float(animSpeed);
         
-        tri.rotation = p1.angle(p2);    //set tri rotation to angle between h.v.'s
+        //increment next tri pos to est. pos based on multiplied normal vector x value
+        curvePos += estPos.x;
+
+        //set tri pos to new curve pos
+        tri.pos = curveEval(curvePos, animScale, animCycles);
+        img.pos = curveEval(curvePos, animScale, animCycles);
+        
+        
+        //rotation----------------------------
+        tVec = glm::vec3(0, -1, 0);       //set an initial heading vector (h.v.) thru TLM for triangle
+        iVec = glm::vec3(-1, 0, 0);        //initial h.v.
+        cVec = glm::vec3(tri.pos - curveEval(curvePos + 1, animScale, animCycles)); //acquire next h.v. thru. diff. of pos between tri pos and curvePos
+        
+        
+        tri.rotation = tVec.angle(cVec);    //set tri rotation to angle between h.v.'s
+        img.rotation = iVec.angle(cVec);      //...img
+        
     }
 
 }
@@ -80,15 +114,24 @@ void ofApp::update(){
 void ofApp::draw(){
     gui.draw();     //draw gui
     
-    ofSetColor(tri.color);     //set color of triangle
-    tri.draw();     //draw triangle
-    
-    //draw sin wave
-    ofSetColor(ofColor::white);
-    for(int i = 0; i < ofGetWidth(); i+=5) {
-        glm::vec3 p = curveEval(i, animScale, animCycles);
-        ofDrawCircle(p.x, p.y, 1);      //circle each pixel
+    //check toggle button
+    if(!imageToggle) {
+        ofSetColor(tri.color);     //set color of triangle
+        tri.draw();     //draw triangle
     }
+    else
+        img.draw();
+    
+    
+    //draw sin wave if path toggle true
+    if(pathToggle) {
+        ofSetColor(ofColor::white);
+        for(int i = 0; i < ofGetWidth(); i+=5) {
+            glm::vec3 p = curveEval(i, animScale, animCycles);
+            ofDrawCircle(p.x, p.y, 2);      //circle each pixel
+        }
+    }
+    
 }
 
 
@@ -162,6 +205,7 @@ void ofApp::mouseDragged(int x, int y, int button){
         tri.color = ofColor::green;
     }
     lastMouse = mousePoint;     //set previous to current
+
 }
 
 //--------------------------------------------------------------
@@ -174,6 +218,7 @@ void ofApp::mousePressed(int x, int y, int button){
         bDrag = true;
         lastMouse = glm::vec3(x, y, 0);
     }
+    
 }
 
 //--------------------------------------------------------------

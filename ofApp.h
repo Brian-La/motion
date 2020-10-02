@@ -34,6 +34,43 @@ public:
     void draw();        //override
 };
 
+//inherit Image from Shape
+class Image : public Shape {
+public:
+    //constructors----------------------------------------------
+    Image() {}      //empty
+    Image(string filename) {
+        load(filename);     //load filename;
+    }
+    
+    //functions-------------------------------------------------
+    //check if image loads
+    void load(string filename) {
+        
+        //if image loads, assign values
+        if(image.load(filename)) {
+            width = image.getWidth();
+            height = image.getHeight();
+            bLoaded = true;
+        }
+        else        //else display error msg
+            cout << "ERROR: Can't load image file: " << filename << endl;
+    }
+    
+    bool inside(glm::vec3 p) {      //check if mouse inside image
+        return (p.x > 0.0 && p.x < width && p.y > 0.0 && p.y < height);
+    }
+    
+    void draw();        //override
+    
+    
+    //data------------------------------------------------------
+    ofImage image;          //image ofImage type
+    bool bLoaded = false;       //bool check if image loaded
+    float width, height;        //width and height of image
+    
+};
+
 
 class ofApp : public ofBaseApp{
 
@@ -62,6 +99,8 @@ class ofApp : public ofBaseApp{
 		
         //app data--------------------------------------------------
         glm::vec3 lastMouse;    //save previous location of mouse movement
+        glm::vec3 normPos;      //normalization of difference vectors
+        glm::vec3 estPos;       //estimated position of triangle shift
 
         float curvePos = 0;     //position in sin wave
         
@@ -76,12 +115,15 @@ class ofApp : public ofBaseApp{
         //GUI-------------------------------------------------------
         ofxPanel gui;
     
-        //speed of triangle
+        //float sliders: triangle speed, wave scale & cycles
         ofxFloatSlider animSpeed, animScale, animCycles;
-        ofxButton s;
+    
+        //imageToggle: if true ? image : triangle;
+        //pathToggle:   if true ? path display : no path display
+        ofxToggle imageToggle, pathToggle;
     
         Triangle tri;       //triangle obj
-        ofImage pac;        //image
+        Image img;          //image obj
 
     
 };
